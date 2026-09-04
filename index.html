@@ -2,10 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AeroStock</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap&v=2');
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e}
 .hidden{display:none!important}
@@ -102,12 +105,12 @@ td{padding:10px 12px;font-size:13px}
   <div class="tabs">
     <button class="tab active" id="tabIngredients" onclick="switchTab('ingredients')">Ingredients</button>
     <button class="tab" id="tabPieces" onclick="switchTab('pieces')">Pieces recurrentes</button>
-    <button class="tab" id="tabGalere" onclick="switchTab('galere')">Pieces de la galere</button>
+    <button class="tab" id="tabGalere" onclick="switchTab('galere')">Outillages</button>
   </div>
   <div style="display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:#64748b">
     <span>&#128218; Ingredients: <strong id="countIngredients">0</strong></span>
     <span>&#128204; Recurrentes: <strong id="countPieces">0</strong></span>
-    <span>&#9888; Galere: <strong id="countGalere">0</strong></span>
+    <span>&#9888; Outillages: <strong id="countGalere">0</strong></span>
   </div>
   <div class="toolbar">
     <div class="search-wrap">
@@ -130,7 +133,7 @@ var EMBED = [{"designation":"PRODUIT DE PROTECTION","col2":"PRODUITS DIVERS DESH
 var tabs = {
   ingredients: { data: EMBED.slice(), sheet: "Feuille 1", hdrs: ["Designation","Libelle effectivite","PN","CCN"], labels: ["Libelle effectivite","PN","CCN"], title: "Catalogue des ingredients", add: "Nouvel ingredient" },
   pieces:     { data: [], sheet: "Pieces",   hdrs: ["Designation","PN","CCN","Type avion"], labels: ["PN","CCN","Type avion"], title: "Pieces recurrentes", add: "Nouvelle piece" },
-  galere:     { data: [], sheet: "piece galere", hdrs: ["Designation","PN","CCN","Type avion","Documentation"], labels: ["PN","CCN","Type avion","Documentation"], title: "Pieces de la galere", add: "Nouvelle piece" }
+  galere:     { data: [], sheet: "piece galere", hdrs: ["Designation","PN","CCN","Type avion"], labels: ["PN","CCN","Type avion"], title: "Outillages", add: "Nouvel outillage" }
 };
 var currentTab = "ingredients";
 var sortField = "designation";
