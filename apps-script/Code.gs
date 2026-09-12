@@ -380,7 +380,7 @@ function saveImageToDrive_(dataUrl, baseName) {
   } catch (e) {
     Logger.log('setSharing: ' + e);
   }
-  return 'https://drive.google.com/uc?export=view&id=' + file.getId();
+  return 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w1600';
 }
 
 // Entree : chaine JSON (tableau de dataURL ou d'URL) — sortie : URLs jointes par |

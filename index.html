@@ -212,13 +212,25 @@ function render() {
     var cells = "<td><span class=\"cell-click\" onclick=\"openDetail('"+row.id+"')\">"+esc(row.designation)+"</span></td>"+
       "<td>"+esc(row.col2)+"</td><td><span class=\"cell-mpn\">"+esc(row.col3)+"</span></td><td><span class=\"cell-ccn\">"+esc(row.col4)+"</span></td>";
     if(numCols>4) cells += "<td>"+esc(row.col5||"")+"</td>";
-    if(hasImg){var first=(row.image||"").split("|")[0];cells += "<td>"+(first?"<img class=\"cell-img\" src=\""+esc(first)+"\" onerror=\"this.style.display='none'\">":"")+"</td>";}
+    if(hasImg){var first=(row.image||"").split("|")[0];cells += "<td>"+(first?"<img class=\"cell-img\" src=\""+esc(driveImg(first))+"\" onerror=\"this.style.display='none'\">":"")+"</td>";}
     return "<tr>"+cells+"</tr>";
   }).join("");
 }
 
 function sortBy(f){if(sortField===f){sortDir=sortDir==="asc"?"desc":"asc"}else{sortField=f;sortDir="asc"}render();}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// Convertit un lien Drive en URL d'image affichable (les anciens liens
+// "uc?export=view" ne s'affichent plus dans les balises img).
+function driveImg(u){
+  var s=String(u||"");
+  if(s.indexOf("drive.google.com")===-1) return s;
+  var id="";
+  var m=s.match(/[?&]id=([^&]+)/);
+  if(m) id=m[1];
+  else { m=s.match(/\/d\/([^/]+)/); if(m) id=m[1]; }
+  return id?("https://drive.google.com/thumbnail?id="+id+"&sz=w1600"):s;
+}
 
 function openDetail(id){
   var row=findRow(id);if(!row)return;
@@ -229,7 +241,7 @@ function openDetail(id){
     "<div class=\"detail-field\"><div class=\"detail-label\">"+l[2]+"</div><div class=\"detail-value\">"+esc(row.col4)+"</div></div>";
   if(l.length>3) detailHtml += "<div class=\"detail-field\"><div class=\"detail-label\">"+l[3]+"</div><div class=\"detail-value\">"+esc(row.col5||"")+"</div></div>";
   var imgs = (row.image||"").split("|").filter(Boolean);
-  if(imgs.length) detailHtml += "<div class=\"gallery\">"+imgs.map(function(u){return "<img src=\""+esc(u)+"\" onerror=\"this.style.display='none'\">"}).join("")+"</div>";
+  if(imgs.length) detailHtml += "<div class=\"gallery\">"+imgs.map(function(u){return "<img src=\""+esc(driveImg(u))+"\" onerror=\"this.style.display='none'\">"}).join("")+"</div>";
   document.getElementById("modalBox").innerHTML=
     "<div class=\"modal-header\"><h2>"+esc(row.designation)+"</h2></div><div class=\"modal-body\">"+detailHtml+
     "</div><div class=\"modal-footer\">"+
@@ -265,7 +277,7 @@ function renderImagePreviews() {
   if (!wrap) return;
   if (!pendingImages.length) { wrap.innerHTML = ""; return; }
   wrap.innerHTML = pendingImages.map(function(src, i){
-    return "<div class=\"thumb-item\"><img src=\""+esc(src)+"\" onerror=\"this.style.display='none'\">"+
+    return "<div class=\"thumb-item\"><img src=\""+esc(driveImg(src))+"\" onerror=\"this.style.display='none'\">"+
       "<button type=\"button\" class=\"thumb-del\" onclick=\"removePendingImage("+i+")\" title=\"Retirer cette photo\">&#10005;</button></div>";
   }).join("");
 }
