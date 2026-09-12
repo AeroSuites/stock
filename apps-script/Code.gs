@@ -39,24 +39,38 @@ function setupTelegram() {
 
 function initTelegram() {
   deleteTelegramWebhook_();
-  installTrigger_();
-  var r = telegramApi_('setMyCommands', {
+  var triggerOk = installTrigger_();
+  telegramApi_('setMyCommands', {
     commands: JSON.stringify([
       { command: 'valider', description: 'Valider une entree (voir message)' }
     ])
   });
   sendTelegram('Bot AeroStock initialise. Les boutons "Valider" fonctionnent desormais.');
-  Logger.log('initTelegram OK — webhook supprime, declencheur installe. ' + (r.ok ? '' : 'setMyCommands: ' + r.error));
+  if (triggerOk) {
+    Logger.log('initTelegram OK — webhook supprime, declencheur installe.');
+  } else {
+    Logger.log(
+      'Webhook supprime et bot pret. ATTENTION : le declencheur automatique n a pas pu etre ' +
+      'installe (permissions). Creez-le manuellement : icone Horloge (Declencheurs) > ' +
+      'Ajouter un declencheur > fonction checkTelegram > Minuteur > Toutes les minutes.'
+    );
+  }
 }
 
 function installTrigger_() {
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === 'checkTelegram') {
-      ScriptApp.deleteTrigger(triggers[i]);
+  try {
+    var triggers = ScriptApp.getProjectTriggers();
+    for (var i = 0; i < triggers.length; i++) {
+      if (triggers[i].getHandlerFunction() === 'checkTelegram') {
+        ScriptApp.deleteTrigger(triggers[i]);
+      }
     }
+    ScriptApp.newTrigger('checkTelegram').timeBased().everyMinutes(1).create();
+    return true;
+  } catch (e) {
+    Logger.log('installTrigger_: ' + e.message);
+    return false;
   }
-  ScriptApp.newTrigger('checkTelegram').timeBased().everyMinutes(1).create();
 }
 
 function deleteTelegramWebhook_() {
