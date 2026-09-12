@@ -367,13 +367,17 @@ function getPhotoFolder_() {
   return it.hasNext() ? it.next() : DriveApp.createFolder(name);
 }
 
-// Convertit une dataURL "data:image/jpeg;base64,...." en fichier Drive public
+// Convertit une dataURL "data:image/xxx;base64,...." en fichier Drive public
 function saveImageToDrive_(dataUrl, baseName) {
   var match = String(dataUrl || '').match(/^data:(image\/[\w+.-]+);base64,(.+)$/);
   if (!match) return String(dataUrl || ''); // deja une URL : on garde
   var mime = match[1];
+  var ext = mime.indexOf('webp') !== -1 ? '.webp'
+    : mime.indexOf('png') !== -1 ? '.png'
+    : mime.indexOf('gif') !== -1 ? '.gif'
+    : '.jpg';
   var bytes = Utilities.base64Decode(match[2]);
-  var blob = Utilities.newBlob(bytes, mime, baseName + '-' + Date.now() + '.jpg');
+  var blob = Utilities.newBlob(bytes, mime, baseName + '-' + Date.now() + ext);
   var file = getPhotoFolder_().createFile(blob);
   try {
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
