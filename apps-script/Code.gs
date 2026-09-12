@@ -12,23 +12,29 @@
 // ============================================================
 
 // ---- Configuration (stockée dans les propriétés du script, jamais dans le code) ----
+// À définir dans : Éditeur Apps Script > Paramètres du projet (⚙) > Propriétés du script :
+//   TELEGRAM_TOKEN  = token du bot (BotFather)
+//   TELEGRAM_CHAT_ID = ex : -5266276172
 function getProp_(key) {
   return PropertiesService.getScriptProperties().getProperty(key);
 }
 
 function setupTelegram() {
-  var ui = SpreadsheetApp.getUi();
-  var token = ui.prompt('Telegram', 'Collez le TOKEN du bot (BotFather) :', ui.ButtonSet.OK_CANCEL);
-  if (token.getSelectedButton() !== ui.Button.OK) return;
-  var chat = ui.prompt('Telegram', 'Collez le CHAT ID (ex : -5266276172) :', ui.ButtonSet.OK_CANCEL);
-  if (chat.getSelectedButton() !== ui.Button.OK) return;
-  PropertiesService.getScriptProperties().setProperty('TELEGRAM_TOKEN', token.getResponseText().trim());
-  PropertiesService.getScriptProperties().setProperty('TELEGRAM_CHAT_ID', chat.getResponseText().trim());
-  try {
-    ui.alert('Configuration enregistrée. Lancez maintenant initTelegram().');
-  } catch (e) {
-    Logger.log('Configuration enregistrée. Lancez maintenant initTelegram().');
+  // Vérifie la configuration et envoie un message de test (aucune fenêtre : sûr depuis l'éditeur)
+  var token = getProp_('TELEGRAM_TOKEN');
+  var chat = getProp_('TELEGRAM_CHAT_ID');
+  if (!token || !chat) {
+    Logger.log(
+      'Configuration manquante. Définissez TELEGRAM_TOKEN et TELEGRAM_CHAT_ID dans ' +
+      'Paramètres du projet > Propriétés du script, puis relancez setupTelegram().'
+    );
+    return;
   }
+  Logger.log('TELEGRAM_TOKEN : présent (' + token.substring(0, 10) + '…)');
+  Logger.log('TELEGRAM_CHAT_ID : ' + chat);
+  var res = sendTelegram('Test AeroStock : configuration valide.');
+  Logger.log('Message de test envoyé.');
+  return res;
 }
 
 function initTelegram() {
@@ -63,8 +69,8 @@ function onOpen() {
   try {
     SpreadsheetApp.getUi()
       .createMenu('AeroStock')
-      .addItem('1. Configurer Telegram (token + chat)', 'setupTelegram')
-      .addItem('2. Initialiser (trigger + boutons)', 'initTelegram')
+      .addItem('Vérifier la config Telegram', 'setupTelegram')
+      .addItem('Initialiser (trigger + boutons)', 'initTelegram')
       .addItem('Tester le bot', 'testTelegram')
       .addToUi();
   } catch (e) {
@@ -106,13 +112,17 @@ function setLastUpdate(id) {
 
 function sendTelegram(msg, replyMarkup) {
   var chatId = getProp_('TELEGRAM_CHAT_ID');
-  if (!chatId) return;
+  if (!chatId) {
+    Logger.log('TELEGRAM_CHAT_ID manquant (Propriétés du script).');
+    return { ok: false, error: 'chat_id manquant' };
+  }
   var payload = { chat_id: chatId, text: msg };
   if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
   try {
-    telegramApi_('sendMessage', payload);
+    return telegramApi_('sendMessage', payload);
   } catch (e) {
     Logger.log('Telegram send error: ' + e);
+    return { ok: false, error: String(e) };
   }
 }
 
