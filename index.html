@@ -63,6 +63,12 @@ tr:hover td{background:#f8fafc}
 .detail-value{font-size:15px;color:#0f172a;font-weight:500;word-break:break-all}
 .detail-img{max-width:100%;max-height:300px;border-radius:12px;margin-top:12px;display:block}
 .thumb-preview{max-width:120px;max-height:80px;border-radius:8px;margin-top:8px;display:block}
+.thumb-wrap{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.thumb-item{position:relative}
+.thumb-item img{max-width:120px;max-height:80px;border-radius:8px;display:block;border:1px solid #e2e8f0}
+.thumb-del{position:absolute;top:-7px;right:-7px;background:#ef4444;color:#fff;border:2px solid #fff;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:1;cursor:pointer;padding:0}
+.gallery{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.gallery img{max-width:100%;max-height:220px;border-radius:12px;border:1px solid #e2e8f0}
 .error-msg{background:#fef2f2;color:#dc2626;padding:10px 14px;border-radius:10px;font-size:13px;margin-top:12px}
 @media(max-width:768px){
 .topbar{height:64px;padding:0 12px}
@@ -139,7 +145,7 @@ var currentTab = "ingredients";
 var sortField = "designation";
 var sortDir = "asc";
 var searchTimer;
-var pendingImage = "";
+var pendingImages = [];
 
 function switchTab(tab) {
   currentTab = tab;
@@ -206,7 +212,7 @@ function render() {
     var cells = "<td><span class=\"cell-click\" onclick=\"openDetail('"+row.id+"')\">"+esc(row.designation)+"</span></td>"+
       "<td>"+esc(row.col2)+"</td><td><span class=\"cell-mpn\">"+esc(row.col3)+"</span></td><td><span class=\"cell-ccn\">"+esc(row.col4)+"</span></td>";
     if(numCols>4) cells += "<td>"+esc(row.col5||"")+"</td>";
-    if(hasImg) cells += "<td>"+(row.image?"<img class=\"cell-img\" src=\""+esc(row.image)+"\" onerror=\"this.style.display='none'\">":"")+"</td>";
+    if(hasImg){var first=(row.image||"").split("|")[0];cells += "<td>"+(first?"<img class=\"cell-img\" src=\""+esc(first)+"\" onerror=\"this.style.display='none'\">":"")+"</td>";}
     return "<tr>"+cells+"</tr>";
   }).join("");
 }
@@ -222,9 +228,10 @@ function openDetail(id){
     "<div class=\"detail-field\"><div class=\"detail-label\">"+l[1]+"</div><div class=\"detail-value\">"+esc(row.col3)+"</div></div>"+
     "<div class=\"detail-field\"><div class=\"detail-label\">"+l[2]+"</div><div class=\"detail-value\">"+esc(row.col4)+"</div></div>";
   if(l.length>3) detailHtml += "<div class=\"detail-field\"><div class=\"detail-label\">"+l[3]+"</div><div class=\"detail-value\">"+esc(row.col5||"")+"</div></div>";
+  var imgs = (row.image||"").split("|").filter(Boolean);
+  if(imgs.length) detailHtml += "<div class=\"gallery\">"+imgs.map(function(u){return "<img src=\""+esc(u)+"\" onerror=\"this.style.display='none'\">"}).join("")+"</div>";
   document.getElementById("modalBox").innerHTML=
     "<div class=\"modal-header\"><h2>"+esc(row.designation)+"</h2></div><div class=\"modal-body\">"+detailHtml+
-    (row.image?"<img class=\"detail-img\" src=\""+esc(row.image)+"\" onerror=\"this.style.display='none'\">":"")+
     "</div><div class=\"modal-footer\">"+
     "<button class=\"btn btn-danger\" onclick=\"deleteItem('"+id+"')\">Supprimer</button>"+
     "<button class=\"btn btn-ghost\" onclick=\"openEdit('"+id+"')\">Modifier</button>"+
@@ -236,7 +243,7 @@ function openEdit(id){
   var row=id?findRow(id):null;
   var t=curTab();
   var l=t.labels;
-  pendingImage = row&&row.image?row.image:"";
+  pendingImages = row&&row.image?row.image.split("|").filter(Boolean):[];
   document.getElementById("modalBox").innerHTML=
     "<div class=\"modal-header\"><h2>"+(id?"Modifier":t.add)+"</h2></div><div class=\"modal-body\">"+
     "<label>Designation</label><input type=\"text\" id=\"e-des\" value=\""+esc(row?row.designation:"")+"\">"+
@@ -244,34 +251,52 @@ function openEdit(id){
     "<label>"+l[1]+"</label><input type=\"text\" id=\"e-c3\" value=\""+esc(row?row.col3:"")+"\">"+
     "<label>"+l[2]+"</label><input type=\"text\" id=\"e-c4\" value=\""+esc(row?row.col4:"")+"\">"+
     (l.length>3?"<label>"+l[3]+"</label><input type=\"text\" id=\"e-c5\" value=\""+esc(row?row.col5:"")+"\">":"")+
-    "<label>Photo</label><input type=\"file\" id=\"e-img\" accept=\"image/*\" onchange=\"previewImage(this)\">"+
-    (pendingImage?"<img class=\"thumb-preview\" id=\"imgPreview\" src=\""+esc(pendingImage)+"\">":"<img class=\"thumb-preview hidden\" id=\"imgPreview\">")+
+    "<label>Photos (plusieurs possibles)</label><input type=\"file\" id=\"e-img\" accept=\"image/*\" multiple onchange=\"previewImages(this)\">"+
+    "<div class=\"thumb-wrap\" id=\"imgPreviews\"></div>"+
     "<div class=\"error-msg hidden\" id=\"saveError\"></div></div><div class=\"modal-footer\">"+
     "<button class=\"btn btn-ghost\" onclick=\"closeModal()\">Annuler</button>"+
     "<button class=\"btn btn-success\" id=\"btnSave\" onclick=\"saveItem('"+(id||"")+"')\">Enregistrer</button></div>";
+  renderImagePreviews();
   show("modalOverlay");
 }
 
-function previewImage(input) {
-  var file = input.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var img = new Image();
-    img.onload = function() {
-      var canvas = document.createElement("canvas");
-      var maxW = 400;
-      var scale = Math.min(1, maxW / img.width);
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      var ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      pendingImage = canvas.toDataURL("image/jpeg", 0.6);
-      document.getElementById("imgPreview").src = pendingImage;
-      document.getElementById("imgPreview").classList.remove("hidden");
+function renderImagePreviews() {
+  var wrap = document.getElementById("imgPreviews");
+  if (!wrap) return;
+  if (!pendingImages.length) { wrap.innerHTML = ""; return; }
+  wrap.innerHTML = pendingImages.map(function(src, i){
+    return "<div class=\"thumb-item\"><img src=\""+esc(src)+"\" onerror=\"this.style.display='none'\">"+
+      "<button type=\"button\" class=\"thumb-del\" onclick=\"removePendingImage("+i+")\" title=\"Retirer cette photo\">&#10005;</button></div>";
+  }).join("");
+}
+
+function removePendingImage(i) {
+  pendingImages.splice(i, 1);
+  renderImagePreviews();
+}
+
+function previewImages(input) {
+  var files = Array.prototype.slice.call(input.files || []);
+  files.forEach(function(file){
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement("canvas");
+        var maxW = 400;
+        var scale = Math.min(1, maxW / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        pendingImages.push(canvas.toDataURL("image/jpeg", 0.6));
+        renderImagePreviews();
+      };
+      img.src = e.target.result;
     };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  });
+  input.value = "";
 }
 
 function saveItem(id){
@@ -286,14 +311,15 @@ function saveItem(id){
     "&col4="+encodeURIComponent(document.getElementById("e-c4").value.trim());
   if(t.labels.length>3) params += "&col5="+encodeURIComponent((document.getElementById("e-c5")||{value:""}).value.trim());
   if(id) params += "&id="+encodeURIComponent(id);
-  if(pendingImage) params += "&image="+encodeURIComponent(pendingImage);
+  params += "&images="+encodeURIComponent(JSON.stringify(pendingImages));
 
   var fetchOpts = params.length > 4000 ? { method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: params } : null;
   var url = fetchOpts ? API : API + "?" + params;
 
   fetch(url, fetchOpts || {}).then(function(r){return r.json()}).then(function(res){
     if(res.success){
-      if(id){var idx=findIdx(id);if(idx>=0)cur()[idx]={designation:d,col2:document.getElementById("e-c2").value.trim(),col3:document.getElementById("e-c3").value.trim(),col4:document.getElementById("e-c4").value.trim(),id:id,image:pendingImage,col5:(document.getElementById("e-c5")||{value:""}).value.trim()};}
+      var imgsJoined = pendingImages.join("|");
+      if(id){var idx=findIdx(id);if(idx>=0)cur()[idx]={designation:d,col2:document.getElementById("e-c2").value.trim(),col3:document.getElementById("e-c3").value.trim(),col4:document.getElementById("e-c4").value.trim(),id:id,image:imgsJoined,col5:(document.getElementById("e-c5")||{value:""}).value.trim()};}
       closeModal();updateUI();render();
       setTimeout(function(){loadSheet(t.sheet,function(d){tabs[currentTab].data=d;if(currentTab===currentTab){updateUI();render();}});},500);
     }else{err("Erreur: "+(res.error||"inconnue"));btn.disabled=false;btn.textContent="Enregistrer";}
