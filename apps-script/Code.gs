@@ -96,6 +96,20 @@ function testTelegram() {
   sendTelegram('Test AeroStock : si vous recevez ce message, la configuration est bonne.');
 }
 
+// À exécuter une fois pour autoriser l'accès Google Drive (photos)
+function authorizeDrive() {
+  var name = DriveApp.getRootFolder().getName();
+  Logger.log('Drive autorisé. Dossier racine : ' + name);
+}
+
+// Vérifie l'enregistrement d'une photo sur Drive
+function testPhoto() {
+  var tiny = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  var url = saveImageToDrive_(tiny, 'test');
+  Logger.log('Photo test enregistrée : ' + url);
+  return url;
+}
+
 function telegramApi_(method, payload) {
   var token = getProp_('TELEGRAM_TOKEN');
   if (!token) throw new Error('TELEGRAM_TOKEN manquant : executez setupTelegram().');
