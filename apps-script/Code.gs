@@ -300,8 +300,22 @@ function normalizeValue(value) {
   return String(value == null ? '' : value).trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+// Retrouve une feuille par son nom, en ignorant la casse et les espaces
+// (permet de renommer un onglet sans casser le site).
+function findSheet_(name) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var direct = ss.getSheetByName(name);
+  if (direct) return direct;
+  var target = normalizeValue(name);
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (normalizeValue(sheets[i].getName()) === target) return sheets[i];
+  }
+  return null;
+}
+
 function validateEntry(sheetName, designation, rowId) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var sheet = findSheet_(sheetName);
   if (!sheet) {
     return { success: false, message: 'Onglet "' + sheetName + '" introuvable.' };
   }
@@ -375,7 +389,7 @@ function saveImages_(imagesParam, baseName) {
 
 function handleRequest(e) {
   var sheetName = e.parameter.sheet || 'Feuille 1';
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var sheet = findSheet_(sheetName);
   var action = e.parameter.action;
   var output = ContentService.createTextOutput();
   output.setMimeType(ContentService.MimeType.JSON);
