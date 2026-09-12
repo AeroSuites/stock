@@ -244,11 +244,14 @@ function driveImgFull(u){
   var m=s.match(/[?&]id=([^&]+)/);
   if(m) id=m[1];
   else { m=s.match(/\/d\/([^/]+)/); if(m) id=m[1]; }
-  return id?("https://drive.google.com/thumbnail?id="+id+"&sz=w2400"):s;
+  return id?("https://lh3.googleusercontent.com/d/"+id+"=w2400"):s;
 }
 
 function openLightbox(src){
-  document.getElementById("lightboxImg").src=driveImgFull(src);
+  var img=document.getElementById("lightboxImg");
+  // Si la version originale ne charge pas, repli sur la miniature connue
+  img.onerror=function(){ img.onerror=null; img.src=String(src); };
+  img.src=driveImgFull(src);
   show("lightbox");
 }
 
@@ -320,13 +323,13 @@ function previewImages(input) {
       var img = new Image();
       img.onload = function() {
         var canvas = document.createElement("canvas");
-        var maxW = 400;
+        var maxW = 1600;
         var scale = Math.min(1, maxW / img.width);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
         var ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        pendingImages.push(canvas.toDataURL("image/jpeg", 0.6));
+        pendingImages.push(canvas.toDataURL("image/jpeg", 0.8));
         renderImagePreviews();
       };
       img.src = e.target.result;
