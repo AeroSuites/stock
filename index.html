@@ -185,9 +185,9 @@ function loadSheet(sheet, cb) {
 }
 
 setTimeout(function(){
-  loadSheet("Feuille 1", function(d){ if(d.length){ tabs.ingredients.data=d; if(currentTab==="ingredients"){ updateUI(); render(); } } });
-  loadSheet("Pieces", function(d){ tabs.pieces.data=d; if(currentTab==="pieces"){ updateUI(); render(); } });
-  loadSheet("piece galere", function(d){ tabs.galere.data=d; if(currentTab==="galere"){ updateUI(); render(); } });
+  loadSheet("Feuille 1", function(d){ if(d.length){ tabs.ingredients.data=d; } updateUI(); if(currentTab==="ingredients") render(); });
+  loadSheet("Pieces", function(d){ tabs.pieces.data=d; updateUI(); if(currentTab==="pieces") render(); });
+  loadSheet("Outillages", function(d){ tabs.galere.data=d; updateUI(); if(currentTab==="galere") render(); });
 }, 200);
 
 function render() {
@@ -361,7 +361,7 @@ function saveItem(id){
       var imgsJoined = pendingImages.join("|");
       if(id){var idx=findIdx(id);if(idx>=0)cur()[idx]={designation:d,col2:document.getElementById("e-c2").value.trim(),col3:document.getElementById("e-c3").value.trim(),col4:document.getElementById("e-c4").value.trim(),id:id,image:imgsJoined,col5:(document.getElementById("e-c5")||{value:""}).value.trim()};}
       closeModal();updateUI();render();
-      setTimeout(function(){loadSheet(t.sheet,function(d){tabs[currentTab].data=d;if(currentTab===currentTab){updateUI();render();}});},500);
+      setTimeout(function(){loadSheet(t.sheet,function(d){tabs[currentTab].data=d;updateUI();render();});},500);
     }else{err("Erreur: "+(res.error||"inconnue"));btn.disabled=false;btn.textContent="Enregistrer";}
   }).catch(function(){err("Serveur inaccessible");btn.disabled=false;btn.textContent="Enregistrer";});
 }
@@ -380,7 +380,7 @@ function deleteItem(id){
       if(res.success||res.error==="ID introuvable"){
         if(idx>=0)cur().splice(idx,1);
         closeModal();updateUI();render();
-        setTimeout(function(){loadSheet(t.sheet,function(d){tabs[currentTab].data=d;if(currentTab===currentTab){updateUI();render();}});},500);
+        setTimeout(function(){loadSheet(t.sheet,function(d){tabs[currentTab].data=d;updateUI();render();});},500);
       }
     }).catch(function(){});
 }
