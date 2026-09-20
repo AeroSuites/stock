@@ -432,7 +432,8 @@ function handleRequest(e) {
           col4: String(data[i][3] || ''),
           id: existingId,
           image: data[i].length > 5 ? String(data[i][5] || '') : '',
-          col5: data[i].length > 7 ? String(data[i][7] || '') : ''
+          col5: data[i].length > 7 ? String(data[i][7] || '') : '',
+          col6: data[i].length > 8 ? String(data[i][8] || '') : ''
         });
       }
     }
@@ -479,7 +480,8 @@ function handleRequest(e) {
       rowId,
       imagesAdd,
       'En attente',
-      e.parameter.col5 || ''
+      e.parameter.col5 || '',
+      e.parameter.col6 || ''
     ]);
     sendNotification(sheetName, 'add', e.parameter.designation || '', rowId);
     return output.setContent(JSON.stringify({ success: true, id: rowId, images: imagesAdd }));
@@ -502,6 +504,7 @@ function handleRequest(e) {
           sheet.getRange(i + 1, 6).setValue(e.parameter.image || '');
         }
         if (e.parameter.col5 !== undefined) sheet.getRange(i + 1, 8).setValue(e.parameter.col5 || '');
+        if (e.parameter.col6 !== undefined) sheet.getRange(i + 1, 9).setValue(e.parameter.col6 || '');
         sendNotification(sheetName, 'update', e.parameter.designation || '');
         return output.setContent(JSON.stringify({ success: true }));
       }
