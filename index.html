@@ -57,6 +57,13 @@ tr:hover td{background:#f8fafc}
 .sub-row .section-count{opacity:.85;font-weight:700;font-size:13px}
 .sub-row .section-caret{font-size:15px}
 .section-caret{display:inline-block;width:14px;opacity:.9}
+.sub-filter-bar{background:#fff;border-radius:12px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sub-filter-bar.hidden{display:none}
+.sub-filter-label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.sub-chip{border:2px solid #7dd3fc;background:#fff;color:#0369a1;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.sub-chip:hover{background:#e0f2fe}
+.sub-chip.off{opacity:.45;text-decoration:line-through}
+.sub-filter-clear{margin-left:auto;font-size:11px;color:#0284c7;background:none;border:none;cursor:pointer;font-weight:700;text-decoration:underline}
 .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100}
 .modal{background:#fff;border-radius:20px;width:90%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .modal-header{padding:24px 28px 0}
@@ -141,6 +148,7 @@ td{padding:10px 12px;font-size:13px}
       <span id="btnAddText">Nouvel ingredient</span>
     </button>
   </div>
+  <div id="subFilterBar" class="sub-filter-bar hidden"></div>
   <div class="table-wrap">
     <table><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table>
   </div>
@@ -165,6 +173,48 @@ var SOUS_SECTIONS = ["Fauteuil", "Galley", "SPE02", "Cabine", "Lavatory", "Soute
 // Etat plie/deplie des sections et sous-sections
 var collapsedSections = {};
 var collapsedSubs = {};
+
+// Sous-sections masquees (choix d'affichage), par onglet
+var hiddenSubs = {};
+
+function toggleSubFilter(sub){
+  var key = currentTab + "|" + sub;
+  hiddenSubs[key] = !hiddenSubs[key];
+  render();
+}
+
+function showAllSubs(){
+  Object.keys(hiddenSubs).forEach(function(k){
+    if (k.indexOf(currentTab + "|") === 0) delete hiddenSubs[k];
+  });
+  render();
+}
+
+// Barre de choix des sous-sections affichees (Pieces / Outillages)
+function updateSubFilterBar(){
+  var bar = document.getElementById("subFilterBar");
+  var t = curTab();
+  if (!bar) return;
+  if (!t.sections) { bar.classList.add("hidden"); bar.innerHTML = ""; return; }
+  var present = {};
+  cur().forEach(function(row){
+    var s = String(row.col6 || "").trim();
+    present[s] = (present[s] || 0) + 1;
+  });
+  var order = SOUS_SECTIONS.slice();
+  Object.keys(present).forEach(function(s){ if (s && order.indexOf(s) === -1) order.push(s); });
+  if (present[""]) order.push("");
+  var chips = order
+    .filter(function(s){ return present[s]; })
+    .map(function(s){
+      var off = !!hiddenSubs[currentTab + "|" + s];
+      var sJs = esc(s).replace(/'/g, "\\'");
+      return "<button class=\"sub-chip" + (off ? " off" : "") + "\" onclick=\"toggleSubFilter('" + sJs + "')\" title=\"" + (off ? "Afficher" : "Masquer") + " cette sous-section\">" + (s ? esc(s) : "Non classé") + " (" + present[s] + ")</button>";
+    });
+  bar.innerHTML = "<span class=\"sub-filter-label\">Sous-sections :</span>" + chips.join("") +
+    (chips.length ? "<button class=\"sub-filter-clear\" onclick=\"showAllSubs()\">Tout afficher</button>" : "");
+  bar.classList.remove("hidden");
+}
 var currentTab = "ingredients";
 var sortField = "designation";
 var sortDir = "asc";
@@ -212,6 +262,7 @@ setTimeout(function(){
 function render() {
   var all = cur();
   var t = curTab();
+  updateSubFilterBar();
   var dataFields = t.dataFields || ["designation","col2","col3","col4","col5"];
   var numCols = t.hdrs.length;
   var hasImg = all.some(function(r){return r.image;});
@@ -225,6 +276,12 @@ function render() {
     for(var k in row){if(k!=="image"&&String(row[k]||"").toLowerCase().indexOf(q)!==-1)return true;}
     return false;
   });
+  // Choix des sous-sections affichees (Pieces / Outillages)
+  if (t.sections) {
+    list = list.filter(function(row){
+      return !hiddenSubs[currentTab + "|" + String(row.col6||"").trim()];
+    });
+  }
   list.sort(function(a,b){
     var va=String(a[sortField]||"").toLowerCase(),vb=String(b[sortField]||"").toLowerCase();
     if(va<vb)return sortDir==="asc"?-1:1;if(va>vb)return sortDir==="asc"?1:-1;return 0;
