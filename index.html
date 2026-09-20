@@ -176,6 +176,8 @@ var collapsedSubs = {};
 
 // Sous-sections masquees (choix d'affichage), par onglet
 var hiddenSubs = {};
+// Types avion masques (choix d'affichage), par onglet
+var hiddenTypes = {};
 
 function toggleSubFilter(sub){
   var key = currentTab + "|" + sub;
@@ -183,24 +185,46 @@ function toggleSubFilter(sub){
   render();
 }
 
+function toggleTypeFilter(type){
+  var key = currentTab + "|" + type;
+  hiddenTypes[key] = !hiddenTypes[key];
+  render();
+}
+
 function showAllSubs(){
   Object.keys(hiddenSubs).forEach(function(k){
     if (k.indexOf(currentTab + "|") === 0) delete hiddenSubs[k];
   });
+  Object.keys(hiddenTypes).forEach(function(k){
+    if (k.indexOf(currentTab + "|") === 0) delete hiddenTypes[k];
+  });
   render();
 }
 
-// Barre de choix des sous-sections affichees (Pieces / Outillages)
+// Barre de choix des types avion et sous-sections affichees (Pieces / Outillages)
 function updateSubFilterBar(){
   var bar = document.getElementById("subFilterBar");
   var t = curTab();
   if (!bar) return;
   if (!t.sections) { bar.classList.add("hidden"); bar.innerHTML = ""; return; }
+  var presentTypes = {};
   var present = {};
   cur().forEach(function(row){
+    var ty = String(row.col4 || "").trim();
+    presentTypes[ty] = (presentTypes[ty] || 0) + 1;
     var s = String(row.col6 || "").trim();
     present[s] = (present[s] || 0) + 1;
   });
+  var typeOrder = TYPES_AVION.slice();
+  Object.keys(presentTypes).forEach(function(ty){ if (ty && typeOrder.indexOf(ty) === -1) typeOrder.push(ty); });
+  if (presentTypes[""]) typeOrder.push("");
+  var typeChips = typeOrder
+    .filter(function(ty){ return presentTypes[ty]; })
+    .map(function(ty){
+      var off = !!hiddenTypes[currentTab + "|" + ty];
+      var tyJs = esc(ty).replace(/'/g, "\\'");
+      return "<button class=\"sub-chip" + (off ? " off" : "") + "\" onclick=\"toggleTypeFilter('" + tyJs + "')\" title=\"" + (off ? "Afficher" : "Masquer") + " ce type avion\">" + (ty ? esc(ty) : "Non classé") + " (" + presentTypes[ty] + ")</button>";
+    });
   var order = SOUS_SECTIONS.slice();
   Object.keys(present).forEach(function(s){ if (s && order.indexOf(s) === -1) order.push(s); });
   if (present[""]) order.push("");
@@ -211,8 +235,11 @@ function updateSubFilterBar(){
       var sJs = esc(s).replace(/'/g, "\\'");
       return "<button class=\"sub-chip" + (off ? " off" : "") + "\" onclick=\"toggleSubFilter('" + sJs + "')\" title=\"" + (off ? "Afficher" : "Masquer") + " cette sous-section\">" + (s ? esc(s) : "Non classé") + " (" + present[s] + ")</button>";
     });
-  bar.innerHTML = "<span class=\"sub-filter-label\">Sous-sections :</span>" + chips.join("") +
-    (chips.length ? "<button class=\"sub-filter-clear\" onclick=\"showAllSubs()\">Tout afficher</button>" : "");
+  var hasChips = typeChips.length || chips.length;
+  bar.innerHTML =
+    (typeChips.length ? "<span class=\"sub-filter-label\">Types avion :</span>" + typeChips.join("") : "") +
+    (chips.length ? "<span class=\"sub-filter-label\" style=\"margin-left:10px\">Sous-sections :</span>" + chips.join("") : "") +
+    (hasChips ? "<button class=\"sub-filter-clear\" onclick=\"showAllSubs()\">Tout afficher</button>" : "");
   bar.classList.remove("hidden");
 }
 var currentTab = "ingredients";
@@ -276,10 +303,12 @@ function render() {
     for(var k in row){if(k!=="image"&&String(row[k]||"").toLowerCase().indexOf(q)!==-1)return true;}
     return false;
   });
-  // Choix des sous-sections affichees (Pieces / Outillages)
+  // Choix des types avion et sous-sections affiches (Pieces / Outillages)
   if (t.sections) {
     list = list.filter(function(row){
-      return !hiddenSubs[currentTab + "|" + String(row.col6||"").trim()];
+      var ty = String(row.col4||"").trim();
+      var s = String(row.col6||"").trim();
+      return !hiddenTypes[currentTab + "|" + ty] && !hiddenSubs[currentTab + "|" + s];
     });
   }
   list.sort(function(a,b){
