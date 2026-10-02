@@ -123,8 +123,8 @@ td{padding:10px 12px;font-size:13px}
 </head>
 <body>
 <div class="topbar">
-  <div class="topbar-logo"><div class="icon">&#9992;</div><div><div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:2px">AeroStock</div></div></div>
-  <div class="topbar-brand"><div class="brand-name">AeroStock</div><div class="brand-sub" id="brandSub">Catalogue des ingredients</div></div>
+  <div class="topbar-logo"><div class="icon">&#9992;</div></div>
+  <div class="topbar-brand"><div class="brand-name">AeroStock</div></div>
   <span class="badge" id="totalBadge">--</span>
 </div>
 <div id="app">
@@ -252,7 +252,6 @@ function switchTab(tab) {
   document.querySelectorAll(".tab").forEach(function(b){b.classList.remove("active")});
   document.getElementById(tab==="ingredients"?"tabIngredients":tab==="pieces"?"tabPieces":"tabGalere").classList.add("active");
   var t = tabs[tab];
-  document.getElementById("brandSub").textContent = t.title;
   document.getElementById("btnAddText").textContent = t.add;
   document.getElementById("searchInput").value = "";
   sortField = "designation"; sortDir = "asc";
